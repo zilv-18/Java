@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>表白墙</title>
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <h1>表白墙</h1>
+        <p>
+            <script src="https://tenapi.cn/yiyan/?format=js"></script>
+        </p>
+
+        <div class="row">
+            <span>谁</span>
+            <input type="text" class="edit">
+        </div>
+        <div class="row">
+            <span>对谁</span>
+            <input type="text" class="edit">
+        </div>
+        <div class="row">
+            <span>说什么</span>
+            <input type="text" class="edit">
+        </div>
+        <div class="row">
+            <input type="button" value="提 交" id="submit">
+        </div>
+
+        <!-- 每次点击 '提交' 都在下面新增一个 .row 里面放置用户输入的话 -->
+    </div>
+
+
+    <script>
+        // 1.在页面加载的时候,访问服务器这不获取到消息列表,并展示出来
+
+        function load() {
+            // 通过这个 load 函数,从服务器获取消息,并进行展示
+            $.ajax({
+                type: 'GET',
+                url: 'messageDB',
+                success: function (data, status) {
+                    // data 是响应的 body , 
+                    // status 是响应的状态码
+                    // 此时的响应可能只是一个字符串格式 , 可以手动的进行一个解析,按照 json 格式解析对象
+                    // JSON.parse 就是 js 中,将 字符串 转换为 结构化对象
+                    let container = document.querySelector('.container');
+                    // 此时 data 已经是一个对象数组了, 所以不需要进行转换
+                    // let messages = JSON.parse(data);
+                    if (data != null) {
+                        for (let message of data) {
+                            let row = document.createElement('div');
+                            row.className = "row";
+                            row.innerHTML = message.from + "对" + message.to + "说" + message.message;
+                            container.appendChild(row);
+                        }
+                    }
+                }
+            })
+        }
+        load();
+        // 2.点击提交按钮的时候,把当前的数据构造一个 HTTP 请求发给服务器
+
+        let submitButton = document.querySelector("#submit");
+        submitButton.onclick = function () {
+
+            // 清空信息
+            let empty = function (edits) {
+                for (let i = 0; i < edits.length; i++) {
+                    edits[i].value = '';
+                }
+            }
+            // 1. 先获取到编辑框的内容
+            let edits = document.querySelectorAll(".edit")
+            // console.log(edits);
+            let from = edits[0].value;
+            let to = edits[1].value;
+            let message = edits[2].value;
+            console.log(from + ',' + to + ',' + message);
+            if (from == '' || to == '' || message == '') {
+                // 对用户输入做一个简单的校验,验证一下当前是否是合法的提交
+                return;
+            }
+
+            if ((from.indexOf(' ') != -1) || (to.indexOf(' ') != -1)) {
+                alert("名字不能有空格!");
+                empty(edits);
+                return;
+            }
+            // 2. 根据内容,构造 HTML 元素 (.row 里面包含用户输入的话)
+            let row = document.createElement('div');
+            row.className = 'row';
+            row.innerHTML = from + '对' + to + '说' + message;
+            // 3. 把这个新元素添加到 DOM 树上
+            let container = document.querySelector('.container');
+            container.append(row);
+            // 4.清空原来的输入框
+
+            empty(edits);
+
+            // 5. 构造一个 HTTP 请求,把消息发给服务器保存
+            $.ajax({
+                type: "POST",
+                url: "messageDB",
+                data: JSON.stringify({
+                    from: from,
+                    to: to,
+                    message: message
+                }),
+                contentType: "application/json; charset=utf8",
+                success: function (data, status) {
+                    if (data.OK == 1) {
+                        console.log("提交消息成功");
+                    } else {
+                        console.log("提交消息失败");
+                    }
+                }
+
+            })
+
+        }
+    </script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            ;
+            /* padding: 10px 0; */
+        }
+
+        p {
+            text-align: center;
+            color: #666;
+            padding: 10px 0;
+            font-size: 14px;
+        }
+
+        .row {
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        span {
+            width: 80px;
+            font-size: 20px;
+        }
+
+        input {
+            width: 310px;
+            height: 40px;
+        }
+
+        #submit {
+            width: 400px;
+            color: white;
+            background-color: orange;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+        }
+
+        #submit:active {
+            background-color: #666;
+        }
+
+        .edit {
+            font-size: 18px;
+            border-radius: 5px;
+            padding-left: 5px;
+        }
+    </style>
+</body>
+
+</html>
